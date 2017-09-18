@@ -1,6 +1,6 @@
 import math
 import random
-import numpy as np
+import requests
 import sensor
 
 class CuneydBot(object):
@@ -16,17 +16,42 @@ class CuneydBot(object):
 	@param encoder_error: max error of the encoder,in radians per revolution
 	@return: CuneydBot object
     '''
-    def __init__(self, pos, d, vl=0, vr=0, id=0,p = 1,sensors=[],gr=100,encoder_error = 0.05):
+    def __init__(self, pos, d, vl=0, vr=0, id=0,p = 1,sensors=[],gr=100,encoder_error = 0.05,server_address="localhost:5000"):
 	self.pos = pos
 	self.wheel_vel = [vl,vr]
-	self.sensed_pos = [x,y,th]
+	self.sensed_pos = pos
+	self.err_p = p
         self.ID = ID
         self.p = p
 	self.d = d
         self.sensors = sensors
 	self.gr=gr
 	self.encoder_error = encoder_error
+	self.server_address = server_address
+        try:
+	    data = {'x': self.pos[0], 'y': self.pos[1], 't': self.pos[2], 'ID': self.ID, 'p': self.p}
+	    data_err = {'x': self.pos[0], 'y': self.pos[1], 't': self.pos[2], 'ID': -self.ID, 'p': self.p}
+
+	    requests.post(self.server_address+"/create_cuneyd", json=data)
+	    requests.post(self.server_address+'/create_cuneyd', json=data_err)
+        except Exception as e:
+	    print "Connection error: "+repr(e)
+	    
 	
+    def post_position(self):
+	try:
+	    data = {'x': self.pos[0], 'y': self.pos[1], 't': self.pos[2], 'p': self.p, 'ID': self.ID}
+	    requests.post(self.server_address+'/update_cuneyd', json=data)
+        except Exception as e:
+	    print "Connection error: " + repr(e)
+	
+    def post_err_position(self):
+	try:
+	    data = {'x': self.err_pos[0], 'y': self.err_pos[1], 't': self.err_pos[2], 'p': self.err_p, 'ID': - self.ID}
+	    request.post(self.server_address+'/update_cuneyd',json=data)
+	except Exception as e:
+	    print "Connection error: " + repr(e)
+    
     def add_sensor(self,x,y,th,sensor_type = sensor.ProximitySensor):
         #adds sensor to the according place
         self.sensors.append(Sensor.sensor_type(x,y,th))
